@@ -1,0 +1,11 @@
+{{#if article}}
+<article>
+    <h1>{{article.name}}</h1>
+    <p>{{article.published}}</p>
+    <p>{{article.author_name}}</p>
+    <p><img src="/images/{{article.image}}"></p>
+    {{{article.body}}}
+</article>
+{{else}}
+<h1>Article not found</h1>
+{{/if}}

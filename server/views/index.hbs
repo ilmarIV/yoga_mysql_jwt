@@ -1,0 +1,24 @@
+<h1>Homepage</h1>
+
+<div class="article-list">
+  {{#articles}}
+    <article>
+      {{#ifEquals ../user.role "admin"}}
+        <a href="/article/delete/{{id}}" class="delete-link">Delete</a>
+        <a href="/article/update/{{id}}" class="update-link">Update</a>
+      {{/ifEquals}}
+
+      <a href="/article/{{slug}}">
+        <img src="/images/{{image}}" />
+      </a>
+      <h2>
+        <a href="/article/{{slug}}">{{name}}</a>
+      </h2>
+    </article>
+  {{/articles}}
+  {{#noArticles}}
+    <h1>NO ARTICLES LEFT</h1>
+    <br />
+    <a href="#" id="restoreArticles" class="restore-link">Restore All Articles</a>
+  {{/noArticles}}
+</div>
