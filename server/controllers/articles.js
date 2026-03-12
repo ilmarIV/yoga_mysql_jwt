@@ -1,78 +1,85 @@
-const articleDbModel = require('../models/article');
-const articleModel = new articleDbModel();
+const ArticleDbModel = require('../models/article');
+const articleModel = new ArticleDbModel();
 
-class articleController {
+class ArticleController {
   constructor() {}
 
-  // Show all articles
+  // GET /article
   async getAllArticles(req, res) {
-    const articles = await articleModel.findAll();
-    res.render('index', {
-      articles: articles,
-      noArticles: articles.length === 0,
-      user: req.session.user
-    });
+    try {
+      const articles = await articleModel.findAll();
+      res.status(200).json({ articles });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to fetch articles", error: err.message });
+    }
   }
 
-  // Show single article
+  // GET /article/:slug
   async getArticleBySlug(req, res) {
-    const article = await articleModel.findOne(req.params.slug);
-    if (!article) {
-      return res.render('index', { articles: [], msg: 'Article not found', user: req.session.user });
+    try {
+      const article = await articleModel.findOne(req.params.slug);
+      if (!article) {
+        return res.status(404).json({ message: "Article not found" });
+      }
+      res.status(200).json({ article });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to fetch article", error: err.message });
     }
-    res.render('article', { article: article, user: req.session.user });
   }
 
-  // Show "Create Article" form (GET)
-  async showCreateForm(req, res) {
-    res.render('createArticle', { user: req.session.user });
-  }
-
-  // Handle form submission (POST)
+  // POST /article/create
   async createArticle(req, res) {
-    const newArticle = {
-      name: req.body.name,
-      slug: req.body.slug,
-      image: req.body.image,
-      body: req.body.body,
-      published: new Date().toISOString().slice(0, 19).replace('T', ' '),
-      author_id: req.body.author_id
-    };
+    try {
+      const newArticle = {
+        name: req.body.name,
+        slug: req.body.slug,
+        image: req.body.image,
+        body: req.body.body,
+        published: new Date().toISOString().slice(0, 19).replace('T', ' '),
+        author_id: req.body.author_id
+      };
 
-    await articleModel.create(newArticle);
-    res.redirect('/article/');
-  }
-
-  async showUpdateForm(req, res) {
-    const article = await articleModel.findById(req.params.id)
-    if (!article) {
-        return res.redirect('/article/')
+      const createdId = await articleModel.create(newArticle);
+      res.status(201).json({ message: "Article created", articleId: createdId });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to create article", error: err.message });
     }
-
-    res.render('editArticle', {
-        article: article,
-        user: req.session.user
-    })
   }
 
+  // POST /article/update/:id
   async updateArticle(req, res) {
-      const updateData = {}
+    try {
+      const updateData = {};
 
-      if (req.body.name !== undefined) updateData.name = req.body.name
-      if (req.body.slug !== undefined) updateData.slug = req.body.slug
-      if (req.body.image !== undefined) updateData.image = req.body.image
-      if (req.body.body !== undefined) updateData.body = req.body.body
-      if (req.body.author_id !== undefined) updateData.author_id = req.body.author_id
+      if (req.body.name !== undefined) updateData.name = req.body.name;
+      if (req.body.slug !== undefined) updateData.slug = req.body.slug;
+      if (req.body.image !== undefined) updateData.image = req.body.image;
+      if (req.body.body !== undefined) updateData.body = req.body.body;
+      if (req.body.author_id !== undefined) updateData.author_id = req.body.author_id;
 
-      await articleModel.update(req.params.id, updateData)
+      const updated = await articleModel.update(req.params.id, updateData);
+      if (!updated) {
+        return res.status(404).json({ message: "Article not found" });
+      }
 
-      res.redirect('/article/')
+      res.status(200).json({ message: "Article updated", articleId: req.params.id });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to update article", error: err.message });
+    }
   }
 
+  // DELETE /article/delete/:id
   async deleteArticle(req, res) {
-    await articleModel.delete(req.params.id);
-    res.redirect('/article/');
+    try {
+      const deleted = await articleModel.delete(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Article not found" });
+      }
+      res.status(200).json({ message: "Article deleted", articleId: req.params.id });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to delete article", error: err.message });
+    }
   }
 }
 
-module.exports = articleController;
+module.exports = ArticleController;

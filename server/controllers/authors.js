@@ -1,25 +1,38 @@
-const articleDbModel = require('../models/article')
-const authorDbModel = require('../models/author')
+const ArticleDbModel = require('../models/article');
+const AuthorDbModel = require('../models/author');
 
-const articleModel = new articleDbModel();
-const authorModel = new authorDbModel();
+const articleModel = new ArticleDbModel();
+const authorModel = new AuthorDbModel();
 
-class authorController {
-  constructor() {
-    const authors = []
-  }
+class AuthorController {
+  constructor() {}
 
+  // GET /author
   async getAllAuthors(req, res) {
-    const authors = await authorModel.findAll()
-    res.status(201).json({authors: authors})
+    try {
+      const authors = await authorModel.findAll();
+      res.status(200).json({ authors });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to fetch authors", error: err.message });
+    }
   }
 
+  // GET /author/:id
   async getAuthorById(req, res) {
-    const author = await authorModel.findById(req.params.id)
-    const articles = await articleModel.findMany(req.params.id)
-    author['articles'] = articles
-    res.status(201).json({author: author})
+    try {
+      const author = await authorModel.findById(req.params.id);
+      if (!author) {
+        return res.status(404).json({ message: "Author not found" });
+      }
+
+      const articles = await articleModel.findMany(req.params.id);
+      author['articles'] = articles;
+
+      res.status(200).json({ author });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to fetch author", error: err.message });
+    }
   }
 }
 
-module.exports = authorController
+module.exports = AuthorController;
