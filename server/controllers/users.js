@@ -5,6 +5,9 @@ const { signToken } = require('../utils/jwt')
 class userController {
     constructor() {
         this.model = new userDbModel()
+        this.register = this.register.bind(this);
+        this.login = this.login.bind(this);
+        this.logout = this.logout.bind(this);
     }
 
     async register(req, res) {
@@ -18,10 +21,10 @@ class userController {
                 return res.status(400).json({ message: "Password must be > 6 characters" })
             }
 
-            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,}$/;
-            if (!req.body.password.match(passwordRegex)) {
-                return res.status(400).json({ message: "Password must be > 6 characters and containt uppercase, lowercase" })
-            }
+            //const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,}$/;
+            //if (!req.body.password.match(passwordRegex)) {
+            //    return res.status(400).json({ message: "Password must be > 6 characters and containt uppercase, lowercase" })
+            //}
 
             const cryptPassword = await bcrypt.hash(req.body.password, 10)
             const registerUserId = await this.model.create({
