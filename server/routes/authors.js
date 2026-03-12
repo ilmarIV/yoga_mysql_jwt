@@ -1,10 +1,21 @@
 const express = require("express");
-const router = express.Router();
 const authorControllerClass = require("../controllers/authors");
 
-const authorController = new authorControllerClass()
+class AuthorRouter {
+    constructor() {
+        this.router = express.Router();
+        this.controller = new authorControllerClass();
+        this.initRoutes();
+    }
 
-router.get('/author/', (req, res) => authorController.getAllAuthors(req, res));
-router.get('/author/:id', (req, res) => authorController.getAuthorById(req, res));
+    initRoutes() {
+        this.router.get('/author', this.controller.getAllAuthors);
+        this.router.get('/author/:id', this.controller.getAuthorById);
+    }
 
-module.exports = router;
+    getRouter() {
+        return this.router;
+    }
+}
+
+module.exports = new AuthorRouter().getRouter();

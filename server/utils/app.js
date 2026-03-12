@@ -1,18 +1,41 @@
 const express = require('express')
-const path = require('path')
-const hbs = require('express-handlebars')
 
-const app = express()
+const articleRoutes = require('../routes/articles')
+const authorRoutes = require('../routes/authors')
+const userRoutes = require('../routes/users')
 
-app.set('views', path.join(__dirname, '/../views'))
-app.set('view engine', 'hbs')
-app.engine('hbs', hbs.engine({
-    extname: 'hbs',
-    defaultLayout: 'main',
-    layoutsDir: path.join(__dirname, '/../views/layouts/')
-}))
+class App {
+    constructor(port) {
+        this.port = port
+        this.app = express()
+        this.initMiddleware()
+        this.initRoutes()
+        this.start()
+        this.bindMethods()
+    }
 
-app.use(express.static('public'))
-app.use(express.urlencoded({extended: true}))
+    bindMethods() {
+        this.initMiddleware = this.initMiddleware.bind(this)
+        this.initRoutes = this.initRoutes.bind(this)
+        this.start = this.start.bind(this)
+    }
 
-module.exports = app
+    initMiddleware() {
+        this.app.use(express.json())
+        this.app.use(express.urlencoded({ extended: true }))
+    }
+
+    initRoutes() {
+        this.app.use('/', articleRoutes)
+        this.app.use('/', authorRoutes)
+        this.app.use('/', userRoutes)
+    }
+
+    start() {
+        this.app.listen(this.port, () => {
+            console.log(`Web server is connected at http://localhost:${this.port}`)
+        })
+    }
+}
+
+module.exports = App

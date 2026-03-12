@@ -1,32 +1,26 @@
 const express = require("express");
-const router = express.Router();
 const articleControllerClass = require("../controllers/articles");
-const isAdmin = require('../utils/isAdmin');
+const { authRequired, roleRequired } = require('../utils/auth');
 
-const articleController = new articleControllerClass()
+class ArticleRouter {
+    constructor() {
+        this.router = express.Router();
+        this.controller = new articleControllerClass();
+        this.initRoutes();
+    }
 
-router.get('/article/', (req, res) =>
-    articleController.getAllArticles(req, res)
-);
+    initRoutes() {
+        this.router.get('/article', this.controller.getAllArticles)
+        this.router.get('/article/:slug', this.controller.getArticleBySlug)
 
-router.get('/article/create', (req, res) =>
-    articleController.showCreateForm(req, res));
+        this.router.post('/article/create', authRequired, roleRequired('admin'), this.controller.createArticle)
+        this.router.post('/article/update/:id', authRequired, roleRequired('admin'), this.controller.updateArticle)
+        this.router.delete('/article/delete/:id', authRequired, roleRequired('admin'), this.controller.deleteArticle)
+    }
 
-router.post('/article/create', (req, res) =>
-    articleController.createArticle(req, res));
+    getRouter() {
+        return this.router;
+    }
+}
 
-router.get('/article/update/:id', isAdmin, (req, res) =>
-    articleController.showUpdateForm(req, res));
-router.post('/article/update/:id', isAdmin, (req, res) =>
-    articleController.updateArticle(req, res));
-
-router.get('/article/:slug', (req, res) =>
-    articleController.getArticleBySlug(req, res)
-);
-
-router.get('/article/delete/:id',
-    isAdmin,
-    (req, res) => articleController.deleteArticle(req, res)
-);
-
-module.exports = router;
+module.exports = new ArticleRouter().getRouter();

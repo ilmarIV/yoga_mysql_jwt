@@ -1,51 +1,47 @@
 const bcrypt = require('bcrypt')
 const userDbModel = require('../models/user')
-const userModel = new userDbModel()
+const { signToken } = require('../utils/jwt')
 
 class userController {
+    constructor() {
+        this.model = new userDbModel()
+    }
+
     async register(req, res) {
-        const reqUsername = req.body.username;
-        const reqEmail = req.body.email;
-        const reqPassword = req.body.password;
-        let reqRole = req.body.role
-
-        const existingUser = await userModel.findOne(reqUsername)
-        if (existingUser) {
-            return res.render('register', { msg: 'Username already taken' })
-        }
-
-        if (!reqPassword || reqPassword.length < 6) {
-            return res.render('register', { msg: 'Password must be at least 6 characters long' })
-        }
-
-        if (!reqRole || reqRole === 'user') {
-            reqRole = 'user';
-        } else if (reqRole === 'admin') {
-            reqRole = 'admin';
-        } else {
-            return res.render('register', { msg: 'Invalid role. Only "user" or "admin" allowed.' })
-        }
-
-        const cryptPassword = await bcrypt.hash(reqPassword, 10)
-
-        const registeredId = await userModel.create({
-            username: reqUsername,
-            email: reqEmail,
-            password: cryptPassword,
-            role: reqRole
-        })
-
-        if(registeredId) {
-            const userData = await userModel.findById(registeredId)
-            req.session.user = {
-                username: userData.username,
-                user_id: userData.id,
-                role: userData.role
+        try {
+            const existingUser = await this.model.findOne(req.body.username)
+            if (existingUser) {
+                return res.status(400).json({ message: "Username already exists" })
             }
-            res.render('index', { 
-                articles: [], 
-                msg: `New user ${userData.username} registered successfully` 
+
+            if (req.body.password.length < 6) {
+                return res.status(400).json({ message: "Password must be > 6 characters" })
+            }
+
+            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,}$/;
+            if (!req.body.password.match(passwordRegex)) {
+                return res.status(400).json({ message: "Password must be > 6 characters and containt uppercase, lowercase" })
+            }
+
+            const cryptPassword = await bcrypt.hash(req.body.password, 10)
+            const registerUserId = await this.model.create({
+                username: req.body.username,
+                email: req.body.email,
+                password: cryptPassword
             })
+
+            if (!registerUserId) {
+                return res.status(404).json({ error: "Session is not openned" })
+            }
+
+            const userData = await this.model.findById(registerUserId)
+            res.status(201).json({
+                message: "New usere successfully registered",
+                user: userData
+            })
+
+        } catch (err) {
+            res.status(500).json({ error: err.message })
         }
     }
 
@@ -56,31 +52,42 @@ class userController {
 
 
     async login(req, res) {
-        const reqUsername = req.body.username
-        const reqPassword = req.body.password
+        try {
+            const user = await this.model.findOne(req.body.username)
 
-        const userData = await userModel.findOne(reqUsername)
-        if (!userData) {
-            return res.render('login', { msg: 'User not found' })
+            if (!user) {
+                return res.status(400).json({ message: "Username does not exist" })
+            }
+
+            const passwordCompare = await bcrypt.compare(req.body.password, user.password)
+            if (!passwordCompare) {
+                return res.status(400).json({ message: "Password is incorrect" })
+            }
+
+            const token = signToken({
+                id: user.id,
+                username: user.username,
+                role: user.role
+            })
+            res.status(201).json({
+                message: "Login successful",
+                token,
+                user: {
+                    id: user.id,
+                    username: user.username,
+                    role: user.role
+                }
+            })
+        } catch (err) {
+            res.status(500).json({ error: err.message })
         }
-
-        const passwordMatch = await bcrypt.compare(reqPassword, userData.password)
-        if (!passwordMatch) {
-            return res.render('login', { msg: 'Invalid password' })
-        }
-
-        req.session.user = {
-            username: userData.username,
-            user_id: userData.id,
-            role: userData.role
-        }
-
-        res.render('index', { 
-            articles: [],
-            msg: `Welcome back, ${userData.username}`,
-            user: req.session.user
-        })
     }
+
+    async logout(req, res) {
+        req.session.destroy()
+        res.status(201).json({ message: "Logout successful" })
+    }
+    
 }
 
-module.exports = userController;
+module.exports =  userController;

@@ -1,24 +1,22 @@
 const express = require("express");
-const router = express.Router();
 const userControllerClass = require("../controllers/users");
 
-const userController = new userControllerClass()
+class UserRouter {
+    constructor() {
+        this.router = express.Router();
+        this.controller = new userControllerClass();
+        this.initRoutes();
+    }
 
-router.get('/users/register', (req, res) => {
-    res.render('register');
-});
+    initRoutes() {
+        this.router.post('/users/register', this.controller.register);
+        this.router.post('/users/login', this.controller.login);
+        this.router.get('/users/logout', this.controller.logout);
+    }
 
-router.get('/users/login', (req, res) => {
-    res.render('login');
-});
+    getRouter() {
+        return this.router;
+    }
+}
 
-router.post('/users/register', (req, res) => userController.register(req, res));
-router.post('/users/login', (req, res) => userController.login(req, res));
-
-router.get('/users/logout', (req, res) => {
-    req.session.destroy(() => {
-        res.render('logout');
-    });
-});
-
-module.exports = router;
+module.exports = new UserRouter().getRouter();
